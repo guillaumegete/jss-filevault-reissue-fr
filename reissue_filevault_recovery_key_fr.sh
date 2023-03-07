@@ -13,7 +13,7 @@
 #         Created:  2015-01-05
 #   Last Modified:  2022-10-21
 #         Version:  1.12.2
-#
+#   French Translation: Guillaume Gète <consulting@gete.net>
 ###
 
 
@@ -25,24 +25,25 @@ LOGO=""
 
 # The title of the message that will be displayed to the user.
 # Not too long, or it'll get clipped.
-PROMPT_TITLE="Encryption Key Escrow"
+PROMPT_TITLE="Récupération de la clé de chiffrement"
 
 # The body of the message that will be displayed before prompting the user for
 # their password. All message strings below can be multiple lines.
-PROMPT_MESSAGE="Your Mac's FileVault encryption key needs to be escrowed by PretendCo IT.
+PROMPT_MESSAGE="La clé de chiffrement FileVault de votre Mac doit être mise sous séquestre par Gete.Net Consulting.
 
-Click the Next button below, then enter your Mac's password when prompted."
+Cliquez sur le bouton Suivant ci-dessous puis saisissez le mot de passe de votre Mac."
 
 # The body of the message that will be displayed after 5 incorrect passwords.
-FORGOT_PW_MESSAGE="You made five incorrect password attempts.
+FORGOT_PW_MESSAGE="Vous avez fait cinq saisies incorrectes.
 
-Please contact the Help Desk at 555-1212 for help with your Mac password."
+Merci d'ouvrir rapidement un ticket à support@gete.net."
 
 # The body of the message that will be displayed after successful completion.
-SUCCESS_MESSAGE="Thank you! Your FileVault key has been escrowed."
+SUCCESS_MESSAGE="Merci ! Votre clé FileVault a été mise sous séquestre avec succès."
 
 # The body of the message that will be displayed if a failure occurs.
-FAIL_MESSAGE="Sorry, an error occurred while escrowing your FileVault key. Please contact the Help Desk at 555-1212 for help."
+FAIL_MESSAGE="Désolé, une erreur est survenue lors de la récupération de la clé FileVault. 
+Merci d'ouvrir rapidement un ticket à support@gete.net pour corriger ce problème."
 
 # Optional but recommended: The profile identifiers of the FileVault Key
 # Redirection profiles (e.g. ABCDEF12-3456-7890-ABCD-EF1234567890).
@@ -192,18 +193,18 @@ fi
 
 # Display a branded prompt explaining the password prompt.
 echo "Alerting user $CURRENT_USER about incoming password prompt..."
-/bin/launchctl "$L_METHOD" "$L_ID" sudo -u "$CURRENT_USER" "$jamfHelper" -windowType "utility" -icon "$LOGO" -title "$PROMPT_TITLE" -description "$PROMPT_MESSAGE" -button1 "Next" -defaultButton 1 -startlaunchd &>/dev/null
+/bin/launchctl "$L_METHOD" "$L_ID" sudo -u "$CURRENT_USER" "$jamfHelper" -windowType "utility" -icon "$LOGO" -title "$PROMPT_TITLE" -description "$PROMPT_MESSAGE" -button1 "Suivant" -defaultButton 1 -startlaunchd &>/dev/null
 
 # Get the logged in user's password via a prompt.
 echo "Prompting $CURRENT_USER for their Mac password..."
-USER_PASS="$(/bin/launchctl "$L_METHOD" "$L_ID" sudo -u "$CURRENT_USER" /usr/bin/osascript -e 'display dialog "Please enter the password you use to log in to your Mac:" default answer "" with title "'"${PROMPT_TITLE//\"/\\\"}"'" giving up after 86400 with text buttons {"OK"} default button 1 with hidden answer with icon file "'"${LOGO_POSIX//\"/\\\"}"'"' -e 'return text returned of result')"
+USER_PASS="$(/bin/launchctl "$L_METHOD" "$L_ID" sudo -u "$CURRENT_USER" /usr/bin/osascript -e 'display dialog "Veuillez saisir le mot de passe de votre compte sur ce Mac :" default answer "" with title "'"${PROMPT_TITLE//\"/\\\"}"'" giving up after 86400 with text buttons {"OK"} default button 1 with hidden answer with icon file "'"${LOGO_POSIX//\"/\\\"}"'"' -e 'return text returned of result')"
 
 # Thanks to James Barclay (@futureimperfect) for this password validation loop.
 TRY=1
 until /usr/bin/dscl /Search -authonly "$CURRENT_USER" "$USER_PASS" &>/dev/null; do
     (( TRY++ ))
     echo "Prompting $CURRENT_USER for their Mac password (attempt $TRY)..."
-    USER_PASS="$(/bin/launchctl "$L_METHOD" "$L_ID" sudo -u "$CURRENT_USER" /usr/bin/osascript -e 'display dialog "Sorry, that password was incorrect. Please try again:" default answer "" with title "'"${PROMPT_TITLE//\"/\\\"}"'" giving up after 86400 with text buttons {"OK"} default button 1 with hidden answer with icon file "'"${LOGO_POSIX//\"/\\\"}"'"' -e 'return text returned of result')"
+    USER_PASS="$(/bin/launchctl "$L_METHOD" "$L_ID" sudo -u "$CURRENT_USER" /usr/bin/osascript -e 'display dialog "Désolé, ce mot de passe est incorrect. Veuillez réessayer :" default answer "" with title "'"${PROMPT_TITLE//\"/\\\"}"'" giving up after 86400 with text buttons {"OK"} default button 1 with hidden answer with icon file "'"${LOGO_POSIX//\"/\\\"}"'"' -e 'return text returned of result')"
     if (( TRY >= 5 )); then
         echo "[ERROR] Password prompt unsuccessful after 5 attempts. Displaying \"forgot password\" message..."
         /bin/launchctl "$L_METHOD" "$L_ID" sudo -u "$CURRENT_USER" "$jamfHelper" -windowType "utility" -icon "$LOGO" -title "$PROMPT_TITLE" -description "$FORGOT_PW_MESSAGE" -button1 'OK' -defaultButton 1 -startlaunchd &>/dev/null &
@@ -288,9 +289,9 @@ if [[ $FDESETUP_RESULT -ne 0 ]]; then
     /bin/launchctl "$L_METHOD" "$L_ID" sudo -u "$CURRENT_USER" "$jamfHelper" -windowType "utility" -icon "$LOGO" -title "$PROMPT_TITLE" -description "$FAIL_MESSAGE: fdesetup exited with code $FDESETUP_RESULT. Output: $FDESETUP_OUTPUT" -button1 'OK' -defaultButton 1 -startlaunchd &>/dev/null &
 elif [[ $ESCROW_STATUS -ne 0 ]]; then
     [[ -n "$FDESETUP_OUTPUT" ]] && echo "$FDESETUP_OUTPUT"
-    echo "[WARNING] FileVault key was generated, but escrow cannot be confirmed. Please verify that the redirection profile is installed and the Mac is connected to the internet."
+    echo "[WARNING] La clé FileVault a été générée, mais la redirection n'a pas pu être effectuée. Veuillez vérifier que le profil de redirection est installé et que le Mac est connecté à Internet."
     echo "Displaying \"failure\" message..."
-    /bin/launchctl "$L_METHOD" "$L_ID" sudo -u "$CURRENT_USER" "$jamfHelper" -windowType "utility" -icon "$LOGO" -title "$PROMPT_TITLE" -description "$FAIL_MESSAGE: New key generated, but escrow did not occur." -button1 'OK' -defaultButton 1 -startlaunchd &>/dev/null &
+    /bin/launchctl "$L_METHOD" "$L_ID" sudo -u "$CURRENT_USER" "$jamfHelper" -windowType "utility" -icon "$LOGO" -title "$PROMPT_TITLE" -description "$FAIL_MESSAGE: Une nouvelle clé a été générée mais sans pouvoir être mise sous séquestre." -button1 'OK' -defaultButton 1 -startlaunchd &>/dev/null &
 else
     [[ -n "$FDESETUP_OUTPUT" ]] && echo "$FDESETUP_OUTPUT"
     echo "Displaying \"success\" message..."
